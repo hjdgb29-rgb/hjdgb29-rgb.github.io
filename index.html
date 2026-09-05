@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>I.E. Sagrado Corazón - Registro de Asistencia Docente</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS para exportación a Excel nativo (.xlsx) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    #signature-canvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .escudo-img {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen font-sans">
+
+  <!-- ==================== VISTA DE AUTENTICACIÓN ==================== -->
+  <div id="view-auth" class="flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-slate-200">
+      
+      <!-- Escudo e Identidad Institucional -->
+      <div class="text-center mb-6">
+        <div class="flex justify-center mb-2">
+          <img src="escudo.png" alt="Escudo I.E. Sagrado Corazón" class="h-24 sm:h-28 object-contain escudo-img"
+               onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Sagrado+Coraz%C3%B3n&background=047857&color=fff&size=128&rounded=true';">
+        </div>
+        <h1 class="text-xl font-black text-emerald-900 uppercase tracking-tight">I.E. Sagrado Corazón</h1>
+        <p class="text-xs font-semibold text-emerald-700 uppercase tracking-widest mt-0.5">Virtud y Trabajo</p>
+        <p class="text-xs text-slate-400 mt-1">Control de Clases y Asistencia Docente</p>
+      </div>
+
+      <!-- Selector: Ingresar / Crear Usuario -->
+      <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl mb-5 text-sm font-semibold">
+        <button type="button" id="tab-login"
+                class="py-2 rounded-lg bg-white shadow-sm text-emerald-700 transition">
+          Ingresar
+        </button>
+        <button type="button" id="tab-register"
+                class="py-2 rounded-lg text-slate-600 hover:text-emerald-700 transition">
+          Crear Usuario
+        </button>
+      </div>
+
+      <!-- FORMULARIO 1: INICIAR SESIÓN -->
+      <form id="form-login" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Usuario o Cédula</label>
+          <input type="text" id="login-username" required placeholder="Ej. doc123 o tu cédula"
+                 class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+        </div>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Contraseña</label>
+          <div class="relative">
+            <input type="password" id="login-password" required placeholder="••••••••"
+                   class="w-full pl-4 pr-11 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+            <button type="button" onclick="togglePasswordVisibility('login-password', this)"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-emerald-700 focus:outline-none">
+              <svg class="w-5 h-5 eye-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit"
+                class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition">
+          Iniciar Sesión
+        </button>
+
+        <div class="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1">
+          <p class="font-bold text-slate-700">Cuentas demo listas:</p>
+          <p>• <b>Docente (Editor):</b> usuario <code>profesor</code> | clave <code>123</code></p>
+          <p>• <b>Coordinación (Visualizador):</b> usuario <code>coordinacion</code> | clave <code>123</code></p>
+        </div>
+      </form>
+
+      <!-- FORMULARIO 2: CREAR USUARIO -->
+      <form id="form-register" class="space-y-3.5 hidden">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Nombre Completo del Docente</label>
+          <input type="text" id="reg-user-fullname" required placeholder="Ej. Lic. Carlos Restrepo"
+                 class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Nombre de Usuario o Cédula</label>
+          <input type="text" id="reg-user-username" required placeholder="Ej. crestrepo"
+                 class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Rol Institucional</label>
+          <select id="reg-user-role" required
+                  class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+            <option value="editor">Docente de Aula (Registrar, Firmar y Editar)</option>
+            <option value="viewer">Coordinación / Directivo (Solo Visualización)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Área de Enseñanza Principal</label>
+          <select id="reg-user-default-area" required
+                  class="w-full px-3.5 py-2 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+            <option value="Matemáticas">Matemáticas</option>
+            <option value="Ciencias Naturales">Ciencias Naturales y Ed. Ambiental</option>
+            <option value="Lengua Castellana">Lengua Castellana</option>
+            <option value="Ciencias Sociales">Ciencias Sociales</option>
+            <option value="Tecnología e Informática">Tecnología e Informática</option>
+            <option value="Idioma Extranjero (Inglés)">Idioma Extranjero (Inglés)</option>
+            <option value="Educación Artística">Educación Artística</option>
+            <option value="Educación Física">Educación Física y Deportes</option>
+            <option value="Ética y Valores">Ética y Valores Humanos</option>
+            <option value="Filosofía">Filosofía</option>
+            <option value="Coordinación Académica">Coordinación Académica / Directivo</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">Contraseña</label>
+          <div class="relative">
+            <input type="password" id="reg-user-password" required placeholder="Crea una clave"
+                   class="w-full pl-4 pr-11 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+            <button type="button" onclick="togglePasswordVisibility('reg-user-password', this)"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-emerald-700 focus:outline-none">
+              <svg class="w-5 h-5 eye-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit"
+                class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition">
+          Registrar Usuario
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ==================== VISTA PRINCIPAL (PANEL DE CONTROL) ==================== -->
+  <div id="view-app" class="hidden min-h-screen flex flex-col">
+    
+    <!-- Navbar Institucional -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+        
+        <div class="flex items-center space-x-3">
+          <img src="escudo.png" alt="Escudo Sagrado Corazón" class="h-10 sm:h-12 object-contain escudo-img"
+               onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Sagrado+Coraz%C3%B3n&background=047857&color=fff&size=64&rounded=true';">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-sm font-black text-emerald-950 uppercase tracking-tight" id="header-user-name">Docente</h2>
+              <span id="header-user-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                Rol
+              </span>
+            </div>
+            <p class="text-xs text-emerald-700 font-medium leading-none mt-0.5" id="header-user-area">Área</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <!-- Botón de Gestión de Usuarios -->
+          <button id="btn-open-users-modal"
+                  class="inline-flex items-center space-x-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg border border-slate-200 transition">
+            <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="hidden sm:inline">Usuarios</span>
+          </button>
+
+          <!-- Botón Exportar Excel -->
+          <button id="btn-export-excel"
+                  class="inline-flex items-center space-x-1 px-3 py-2 bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs sm:text-sm font-semibold rounded-lg shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Excel</span>
+          </button>
+
+          <!-- Botón Cerrar Sesión -->
+          <button id="btn-logout"
+                  class="inline-flex items-center space-x-1 px-3 py-2 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 text-xs sm:text-sm font-semibold rounded-lg border border-rose-200 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span class="hidden sm:inline">Salir</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Banner Modo Observador -->
+    <div id="banner-viewer-mode" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900 flex items-center justify-center space-x-2">
+      <svg class="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span><b>Modo Visualización:</b> Sesión iniciada con permisos de Coordinación / Supervisión. La bitácora está en modo solo lectura.</span>
+    </div>
+
+    <!-- Contenido Responsive de 2 Columnas -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 w-full">
+      
+      <!-- Panel de Registro y Firma (Solo modo Docente/Editor) -->
+      <section id="panel-editor" class="lg:col-span-5 space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <h3 class="text-base font-bold text-slate-800 mb-4 flex items-center space-x-2">
+            <span class="w-2.5 h-5 bg-emerald-700 rounded-full inline-block"></span>
+            <span>Registrar Clase y Asistencia</span>
+          </h3>
+
+          <form id="form-registro" class="space-y-4">
+            <!-- Lista para Elegir el Área -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                Área de Conocimiento
+              </label>
+              <select id="reg-area" required
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+                <option value="" disabled selected>Selecciona el área curricular...</option>
+                <option value="Matemáticas">Matemáticas</option>
+                <option value="Ciencias Naturales">Ciencias Naturales y Ed. Ambiental</option>
+                <option value="Lengua Castellana">Lengua Castellana</option>
+                <option value="Ciencias Sociales">Ciencias Sociales</option>
+                <option value="Tecnología e Informática">Tecnología e Informática</option>
+                <option value="Idioma Extranjero (Inglés)">Idioma Extranjero (Inglés)</option>
+                <option value="Educación Artística">Educación Artística</option>
+                <option value="Educación Física">Educación Física y Deportes</option>
+                <option value="Ética y Valores">Ética y Valores Humanos</option>
+                <option value="Filosofía">Filosofía</option>
+              </select>
+            </div>
+
+            <!-- Grado / Grupo -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                Grado / Grupo
+              </label>
+              <input type="text" id="reg-grado" placeholder="Ej. 6-1, 8-2, 10-A" required
+                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm">
+            </div>
+
+            <!-- Tema en Clase -->
+            <div>
+              <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1">
+                Tema en Clase Desarrollado
+              </label>
+              <textarea id="reg-tema" rows="3" required placeholder="Describe las metas de aprendizaje, conceptos orientados y actividades..."
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600 focus:outline-none transition text-sm resize-none"></textarea>
+            </div>
+
+            <!-- Firma Táctil / Ratón -->
+            <div>
+              <div class="flex justify-between items-center mb-1">
+                <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">
+                  Firma Digital del Docente
+                </label>
+                <button type="button" id="btn-clear-canvas" class="text-xs text-rose-600 hover:text-rose-700 font-semibold">
+                  Borrar trazo
+                </button>
+              </div>
+              <div class="border-2 border-dashed border-slate-300 rounded-xl overflow-hidden bg-slate-50 relative">
+                <canvas id="signature-canvas" class="w-full h-36 block"></canvas>
+                <span id="signature-placeholder" class="absolute inset-0 flex items-center justify-center text-xs text-slate-400 pointer-events-none select-none">
+                  Estampa tu firma aquí (con el dedo en móvil o ratón en PC)
+                </span>
+              </div>
+            </div>
+
+            <button type="submit"
+                    class="w-full py-3 bg-emerald-700 hover:bg-emerald-800 active:scale-[0.99] text-white font-semibold rounded-xl shadow-md shadow-emerald-200 transition flex items-center justify-center space-x-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              <span>Guardar Asistencia</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Panel de Bitácora / Historial -->
+      <section id="panel-records" class="lg:col-span-7 space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-800 flex items-center space-x-2">
+                <span class="w-2.5 h-5 bg-blue-600 rounded-full inline-block"></span>
+                <span>Bitácora de Asistencias</span>
+              </h3>
+              <p class="text-xs text-slate-500" id="counter-records">0 clases registradas</p>
+            </div>
+            
+            <input type="text" id="filter-input" placeholder="Buscar por tema, área, grado o docente..."
+                   class="px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600 w-full sm:w-72">
+          </div>
+
+          <div id="records-container" class="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+            <!-- Renderizado dinámico -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODAL: GESTIÓN Y ELIMINACIÓN DE USUARIOS ==================== -->
+  <div id="modal-users" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
+            👥
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-800">Directorio de Usuarios</h3>
+            <p class="text-xs text-slate-500">Gestión de cuentas y accesos del sistema</p>
+          </div>
+        </div>
+        <button id="btn-close-users-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="py-4 overflow-y-auto flex-1 space-y-2.5" id="users-list-container">
+        <!-- Lista inyectada dinámicamente -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 text-right">
+        <button id="btn-close-users-modal-2"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LÓGICA JAVASCRIPT ==================== -->
+  <script>
+    // -------------------------------------------------------------
+    // 1. UTILIDAD: MOSTRAR / OCULTAR CONTRASEÑA
+    // -------------------------------------------------------------
+    function togglePasswordVisibility(inputId, btnElement) {
+      const input = document.getElementById(inputId);
+      const isPassword = input.type === "password";
+      input.type = isPassword ? "text" : "password";
+
+      // Reemplazo del icono SVG según estado
+      btnElement.innerHTML = isPassword ? `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+        </svg>
+      ` : `
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      `;
+    }
+
+    // -------------------------------------------------------------
+    // 2. BASE DE DATOS LOCAL Y ESTADOS (LocalStorage)
+    // -------------------------------------------------------------
+    const STORAGE_USERS = 'ie_sagrado_users_v3';
+    const STORAGE_SESSION = 'ie_sagrado_session_v3';
+    const STORAGE_DATA = 'ie_sagrado_records_v3';
+
+    let users = JSON.parse(localStorage.getItem(STORAGE_USERS) || 'null');
+    if (!users) {
+      users = [
+        {
+          username: "profesor",
+          fullname: "Lic. Carlos Gómez",
+          area: "Matemáticas",
+          role: "editor",
+          password: "123"
+        },
+        {
+          username: "coordinacion",
+          fullname: "Coord. Académica",
+          area: "Coordinación Académica",
+          role: "viewer",
+          password: "123"
+        }
+      ];
+      localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+    }
+
+    let currentUser = JSON.parse(localStorage.getItem(STORAGE_SESSION) || 'null');
+    let records = JSON.parse(localStorage.getItem(STORAGE_DATA) || '[]');
+
+    function saveRecords() {
+      localStorage.setItem(STORAGE_DATA, JSON.stringify(records));
+      renderRecords();
+    }
+
+    function saveUsers() {
+      localStorage.setItem(STORAGE_USERS, JSON.stringify(users));
+      renderUsersList();
+    }
+
+    // -------------------------------------------------------------
+    // 3. VISTAS, LOGIN Y REGISTRO DE USUARIOS
+    // -------------------------------------------------------------
+    const viewAuth = document.getElementById('view-auth');
+    const viewApp = document.getElementById('view-app');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+
+    const headerUserName = document.getElementById('header-user-name');
+    const headerUserArea = document.getElementById('header-user-area');
+    const headerUserBadge = document.getElementById('header-user-badge');
+    const bannerViewer = document.getElementById('banner-viewer-mode');
+    const panelEditor = document.getElementById('panel-editor');
+    const panelRecords = document.getElementById('panel-records');
+    const btnLogout = document.getElementById('btn-logout');
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('bg-white', 'shadow-sm', 'text-emerald-700');
+      tabLogin.classList.remove('text-slate-600');
+      tabRegister.classList.remove('bg-white', 'shadow-sm', 'text-emerald-700');
+      tabRegister.classList.add('text-slate-600');
+
+      formLogin.classList.remove('hidden');
+      formRegister.classList.add('hidden');
+    });
+
+    tabRegister.addEventListener('click', () => {
+      tabRegister.classList.add('bg-white', 'shadow-sm', 'text-emerald-700');
+      tabRegister.classList.remove('text-slate-600');
+      tabLogin.classList.remove('bg-white', 'shadow-sm', 'text-emerald-700');
+      tabLogin.classList.add('text-slate-600');
+
+      formRegister.classList.remove('hidden');
+      formLogin.classList.add('hidden');
+    });
+
+    // Crear Usuario
+    formRegister.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fullname = document.getElementById('reg-user-fullname').value.trim();
+      const username = document.getElementById('reg-user-username').value.trim().toLowerCase();
+      const role = document.getElementById('reg-user-role').value;
+      const area = document.getElementById('reg-user-default-area').value;
+      const password = document.getElementById('reg-user-password').value.trim();
+
+      if (users.some(u => u.username.toLowerCase() === username)) {
+        alert('Este nombre de usuario o cédula ya existe en la base de datos.');
+        return;
+      }
+
+      const newUser = { username, fullname, role, area, password };
+      users.push(newUser);
+      saveUsers();
+
+      alert('Usuario creado exitosamente. Se iniciará la sesión.');
+      currentUser = newUser;
+      localStorage.setItem(STORAGE_SESSION, JSON.stringify(currentUser));
+      formRegister.reset();
+      applyRoleInterface();
+    });
+
+    // Login
+    formLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const u = document.getElementById('login-username').value.trim().toLowerCase();
+      const p = document.getElementById('login-password').value.trim();
+
+      const userFound = users.find(x => x.username.toLowerCase() === u && x.password === p);
+
+      if (userFound) {
+        currentUser = userFound;
+        localStorage.setItem(STORAGE_SESSION, JSON.stringify(currentUser));
+        formLogin.reset();
+        applyRoleInterface();
+      } else {
+        alert('Credenciales inválidas. Por favor revise el usuario y la clave ingresada.');
+      }
+    });
+
+    btnLogout.addEventListener('click', () => {
+      if (confirm('¿Deseas cerrar la sesión activa?')) {
+        currentUser = null;
+        localStorage.removeItem(STORAGE_SESSION);
+        applyRoleInterface();
+      }
+    });
+
+    // -------------------------------------------------------------
+    // 4. CONTROL DE INTERFAZ SEGÚN ROL
+    // -------------------------------------------------------------
+    function applyRoleInterface() {
+      if (!currentUser) {
+        viewAuth.classList.remove('hidden');
+        viewApp.classList.add('hidden');
+        return;
+      }
+
+      viewAuth.classList.add('hidden');
+      viewApp.classList.remove('hidden');
+
+      headerUserName.textContent = currentUser.fullname;
+      headerUserArea.textContent = currentUser.area;
+
+      const isEditor = currentUser.role === 'editor';
+
+      if (isEditor) {
+        headerUserBadge.textContent = 'Docente (Editor)';
+        headerUserBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800';
+        bannerViewer.classList.add('hidden');
+        panelEditor.classList.remove('hidden');
+        panelRecords.className = 'lg:col-span-7 space-y-4';
+
+        const selArea = document.getElementById('reg-area');
+        if (currentUser.area && currentUser.area !== 'Coordinación Académica') {
+          selArea.value = currentUser.area;
+        }
+
+        resizeCanvas();
+      } else {
+        headerUserBadge.textContent = 'Coordinación (Lectura)';
+        headerUserBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-100 text-blue-800';
+        bannerViewer.classList.remove('hidden');
+        panelEditor.classList.add('hidden');
+        panelRecords.className = 'lg:col-span-12 space-y-4';
+      }
+
+      renderRecords();
+    }
+
+    // -------------------------------------------------------------
+    // 5. GESTIÓN Y ELIMINACIÓN DE USUARIOS (MODAL)
+    // -------------------------------------------------------------
+    const modalUsers = document.getElementById('modal-users');
+    const btnOpenUsersModal = document.getElementById('btn-open-users-modal');
+    const btnCloseUsersModal = document.getElementById('btn-close-users-modal');
+    const btnCloseUsersModal2 = document.getElementById('btn-close-users-modal-2');
+    const usersListContainer = document.getElementById('users-list-container');
+
+    function renderUsersList() {
+      if (!usersListContainer) return;
+      usersListContainer.innerHTML = users.map(u => {
+        const isCurrent = currentUser && currentUser.username === u.username;
+        return `
+          <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition">
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-bold text-slate-800">${u.fullname}</span>
+                ${isCurrent ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">Tú</span>' : ''}
+              </div>
+              <p class="text-xs text-slate-500">Usuario: <code class="text-emerald-700 font-bold">${u.username}</code> • Área: ${u.area}</p>
+              <p class="text-[11px] text-slate-400">Rol: ${u.role === 'editor' ? 'Docente (Editor)' : 'Coordinación (Solo Lectura)'}</p>
+            </div>
+            <div>
+              <button onclick="deleteUser('${u.username}')"
+                      class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-100 rounded-lg transition font-bold border border-rose-200">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.deleteUser = function(usernameToDelete) {
+      if (users.length <= 1) {
+        alert('Debe existir al menos un usuario registrado en el sistema.');
+        return;
+      }
+
+      const userTarget = users.find(u => u.username === usernameToDelete);
+      if (!userTarget) return;
+
+      if (confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario: "${userTarget.fullname}" (@${userTarget.username})?`)) {
+        users = users.filter(u => u.username !== usernameToDelete);
+        saveUsers();
+
+        // Si el usuario eliminado era el de la sesión activa, cerrar sesión
+        if (currentUser && currentUser.username === usernameToDelete) {
+          alert('Has eliminado tu propio usuario activo. La sesión finalizará.');
+          currentUser = null;
+          localStorage.removeItem(STORAGE_SESSION);
+          modalUsers.classList.add('hidden');
+          applyRoleInterface();
+        } else {
+          alert('Usuario eliminado con éxito.');
+        }
+      }
+    };
+
+    btnOpenUsersModal.addEventListener('click', () => {
+      renderUsersList();
+      modalUsers.classList.remove('hidden');
+    });
+
+    btnCloseUsersModal.addEventListener('click', () => modalUsers.classList.add('hidden'));
+    btnCloseUsersModal2.addEventListener('click', () => modalUsers.classList.add('hidden'));
+
+    // -------------------------------------------------------------
+    // 6. CANVAS TÁCTIL Y FIRMA DIGITAL
+    // -------------------------------------------------------------
+    const canvas = document.getElementById('signature-canvas');
+    const ctx = canvas.getContext('2d');
+    const btnClearCanvas = document.getElementById('btn-clear-canvas');
+    const signaturePlaceholder = document.getElementById('signature-placeholder');
+
+    let isDrawing = false;
+    let hasSignature = false;
+
+    function resizeCanvas() {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#0f172a';
+    }
+
+    window.addEventListener('resize', () => {
+      if (currentUser && currentUser.role === 'editor' && !hasSignature) {
+        resizeCanvas();
+      }
+    });
+
+    function getCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      let cx = e.clientX;
+      let cy = e.clientY;
+
+      if (e.touches && e.touches.length > 0) {
+        cx = e.touches[0].clientX;
+        cy = e.touches[0].clientY;
+      }
+      return {
+        x: cx - rect.left,
+        y: cy - rect.top
+      };
+    }
+
+    function startDraw(e) {
+      isDrawing = true;
+      hasSignature = true;
+      signaturePlaceholder.style.opacity = '0';
+      const { x, y } = getCoords(e);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      const { x, y } = getCoords(e);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    function stopDraw() {
+      isDrawing = false;
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasSignature = false;
+      signaturePlaceholder.style.opacity = '1';
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    window.addEventListener('mouseup', stopDraw);
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      startDraw(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      draw(e);
+    }, { passive: false });
+
+    window.addEventListener('touchend', stopDraw);
+    btnClearCanvas.addEventListener('click', clearCanvas);
+
+    // -------------------------------------------------------------
+    // 7. GUARDAR REGISTRO DE ASISTENCIA Y CLASE
+    // -------------------------------------------------------------
+    const formRegistro = document.getElementById('form-registro');
+
+    formRegistro.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      if (currentUser.role !== 'editor') {
+        alert('Solo los docentes con rol editor pueden añadir registros.');
+        return;
+      }
+
+      if (!hasSignature) {
+        alert('Debes estampar la firma digital del docente en el recuadro antes de guardar.');
+        return;
+      }
+
+      const area = document.getElementById('reg-area').value;
+      const grado = document.getElementById('reg-grado').value.trim();
+      const tema = document.getElementById('reg-tema').value.trim();
+      
+      const now = new Date();
+      const fecha = now.toLocaleDateString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const hora = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      const newRecord = {
+        id: Date.now(),
+        fecha,
+        hora,
+        institucion: "I.E. Sagrado Corazón",
+        docente: currentUser.fullname,
+        usuarioDocente: currentUser.username,
+        area,
+        grado,
+        tema,
+        firma: canvas.toDataURL('image/png')
+      };
+
+      records.unshift(newRecord);
+      saveRecords();
+
+      document.getElementById('reg-grado').value = '';
+      document.getElementById('reg-tema').value = '';
+      clearCanvas();
+      alert('¡Asistencia y clase registradas correctamente!');
+    });
+
+    // -------------------------------------------------------------
+    // 8. RENDERIZADO, FILTRADO Y ELIMINACIÓN DE REGISTROS
+    // -------------------------------------------------------------
+    const recordsContainer = document.getElementById('records-container');
+    const counterRecords = document.getElementById('counter-records');
+    const filterInput = document.getElementById('filter-input');
+
+    function renderRecords(query = '') {
+      const isEditor = currentUser && currentUser.role === 'editor';
+
+      const filtered = records.filter(r => 
+        r.tema.toLowerCase().includes(query.toLowerCase()) || 
+        r.area.toLowerCase().includes(query.toLowerCase()) ||
+        r.grado.toLowerCase().includes(query.toLowerCase()) ||
+        r.docente.toLowerCase().includes(query.toLowerCase())
+      );
+
+      counterRecords.textContent = `${records.length} clase(s) guardada(s)`;
+
+      if (filtered.length === 0) {
+        recordsContainer.innerHTML = `
+          <div class="text-center py-10 border border-dashed border-slate-200 rounded-2xl">
+            <p class="text-sm text-slate-400">No hay registros de asistencia disponibles.</p>
+          </div>
+        `;
+        return;
+      }
+
+      recordsContainer.innerHTML = filtered.map(item => `
+        <div class="border border-slate-200 hover:border-slate-300 rounded-2xl p-4 bg-slate-50 transition">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                ${item.area}
+              </span>
+              <span class="text-xs font-bold text-slate-700">Grado: ${item.grado}</span>
+              <span class="text-xs text-slate-500">| Docente: ${item.docente}</span>
+            </div>
+            <span class="text-xs text-slate-400">${item.fecha} - ${item.hora}</span>
+          </div>
+
+          <p class="text-sm text-slate-700 font-medium mb-3 whitespace-pre-line">${item.tema}</p>
+
+          <div class="flex items-center justify-between pt-2 border-t border-slate-200">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs text-slate-400 font-medium">Firma digital:</span>
+              <img src="${item.firma}" alt="Firma Docente" class="h-8 border border-slate-200 rounded bg-white px-1">
+            </div>
+
+            <!-- Botón Eliminar Registro -->
+            ${isEditor ? `
+              <button onclick="deleteRecord(${item.id})"
+                      class="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-100 rounded-lg transition font-bold border border-rose-200">
+                Eliminar
+              </button>
+            ` : `
+              <span class="text-[11px] text-slate-400 italic">Solo lectura</span>
+            `}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    filterInput.addEventListener('input', (e) => {
+      renderRecords(e.target.value);
+    });
+
+    window.deleteRecord = function(id) {
+      if (currentUser.role !== 'editor') {
+        alert('Permiso denegado: El rol visualizador no puede eliminar registros.');
+        return;
+      }
+
+      if (confirm('¿Confirmas que deseas eliminar este registro de asistencia?')) {
+        records = records.filter(r => r.id !== id);
+        saveRecords();
+      }
+    };
+
+    // -------------------------------------------------------------
+    // 9. EXPORTACIÓN A EXCEL NATIVO (.XLSX)
+    // -------------------------------------------------------------
+    document.getElementById('btn-export-excel').addEventListener('click', () => {
+      if (records.length === 0) {
+        alert('No existen asistencias registradas para exportar.');
+        return;
+      }
+
+      const dataExport = records.map((r, index) => ({
+        "N°": index + 1,
+        "Institución": r.institucion,
+        "Fecha": r.fecha,
+        "Hora": r.hora,
+        "Docente": r.docente,
+        "Cédula/Usuario": r.usuarioDocente,
+        "Área": r.area,
+        "Grado": r.grado,
+        "Tema en Clase": r.tema,
+        "Firma": "Registrada Digitalmente (PNG)"
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(dataExport);
+      ws['!cols'] = [
+        { wch: 5 },
+        { wch: 26 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 25 },
+        { wch: 16 },
+        { wch: 25 },
+        { wch: 12 },
+        { wch: 45 },
+        { wch: 20 }
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+
+      const fechaHoy = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `I.E._Sagrado_Corazon_Asistencia_${fechaHoy}.xlsx`);
+    });
+
+    // Iniciar aplicación
+    applyRoleInterface();
+  </script>
+</body>
+</html>
